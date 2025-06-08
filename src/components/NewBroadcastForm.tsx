@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Users, FileText, Clock, Send } from "lucide-react";
+import { X, Users, FileText, Clock, Send, Calendar } from "lucide-react";
+import { templateApi, contactApi } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface NewBroadcastFormProps {
   onClose: () => void;
@@ -17,55 +18,154 @@ interface NewBroadcastFormProps {
 export function NewBroadcastForm({ onClose, onSubmit }: NewBroadcastFormProps) {
   const [campaignName, setCampaignName] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [scheduleType, setScheduleType] = useState("now");
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
   const [variables, setVariables] = useState<Record<string, string>>({});
+  const [rateLimitPerMinute, setRateLimitPerMinute] = useState(60);
+  
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  const { toast } = useToast();
 
-  const mockTemplates = [
-    { id: "1", name: "Welcome Message", variables: ["name", "company"] },
-    { id: "2", name: "Newsletter Template", variables: ["name", "month"] },
-    { id: "3", name: "Cart Reminder", variables: ["name", "product"] },
-  ];
+  useEffect(() => {
+    loadTemplates();
+    loadContacts();
+  }, []);
 
-  const mockGroups = [
-    { id: "1", name: "VIP Customers", count: 450 },
-    { id: "2", name: "Newsletter Subscribers", count: 1200 },
-    { id: "3", name: "Recent Customers", count: 890 },
-  ];
+  const loadTemplates = async () => {
+    try {
+      const response = await templateApi.getAll({ status: 'approved' });
+      setTemplates(response.data);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load templates",
+        variant: "destructive"
+      });
+    }
+  };
 
-  const selectedTemplateData = mockTemplates.find(t => t.id === selectedTemplate);
+  const loadContacts = async () => {
+    try {
+      const response = await contactApi.getAll({ status: 'active', limit: 1000 });
+      setContacts(response.data.contacts || []);
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load contacts",
+        variant: "destructive"
+      });
+    }
+  };
 
-  const handleGroupToggle = (groupId: string) => {
-    setSelectedGroups(prev => 
-      prev.includes(groupId) 
-        ? prev.filter(id => id !== groupId)
-        : [...prev, groupId]
+  const selectedTemplateData = templates.find(t => t._id === selectedTemplate);
+
+  const handleContactToggle = (contactId: string) => {
+    setSelectedContacts(prev => 
+      prev.includes(contactId) 
+        ? prev.filter(id => id !== contactId)
+        : [...prev, contactId]
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const data = {
-      campaignName,
-      selectedTemplate,
-      selectedGroups,
-      scheduleType,
-      scheduleDate,
-      scheduleTime,
-      variables,
-    };
-    onSubmit(data);
+  const handleSelectAllContacts = () => {
+    if (selectedContacts.length === contacts.length) {
+      setSelectedContacts([]);
+    } else {
+      setSelectedContacts(contacts.map(c => c._id));
+    }
   };
 
-  const totalRecipients = selectedGroups.reduce((total, groupId) => {
-    const group = mockGroups.find(g => g.id === groupId);
-    return total + (group?.count || 0);
-  }, 0);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!campaignName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Campaign name is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedTemplate) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a template",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (selectedContacts.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please select at least one contact",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (scheduleType === "schedule" && (!scheduleDate || !scheduleTime)) {
+      toast({
+        title: "Validation Error",
+        description: "Please select date and time for scheduling",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      let scheduledAt;
+      if (scheduleType === "now") {
+        scheduledAt = new Date();
+      } else {
+        scheduledAt = new Date(`${scheduleDate}T${scheduleTime}`);
+        if (scheduledAt <= new Date()) {
+          toast({
+            title: "Validation Error",
+            description: "Scheduled time must be in the future",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      const data = {
+        name: campaignName,
+        templateId: selectedTemplate,
+        contactIds: selectedContacts,
+        variables,
+        scheduledAt: scheduledAt.toISOString(),
+        rateLimitPerMinute
+      };
+
+      await onSubmit(data);
+    } catch (error) {
+      console.error('Error creating campaign:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create campaign",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalRecipients = selectedContacts.length;
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
           <Send className="w-5 h-5" />
@@ -95,8 +195,8 @@ export function NewBroadcastForm({ onClose, onSubmit }: NewBroadcastFormProps) {
                 <SelectValue placeholder="Choose a template" />
               </SelectTrigger>
               <SelectContent>
-                {mockTemplates.map((template) => (
-                  <SelectItem key={template.id} value={template.id}>
+                {templates.map((template) => (
+                  <SelectItem key={template._id} value={template._id}>
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4" />
                       {template.name}
@@ -107,49 +207,87 @@ export function NewBroadcastForm({ onClose, onSubmit }: NewBroadcastFormProps) {
             </Select>
           </div>
 
-          {selectedTemplateData && selectedTemplateData.variables.length > 0 && (
+          {selectedTemplateData && (
             <div className="space-y-3">
-              <Label>Template Variables</Label>
-              {selectedTemplateData.variables.map((variable) => (
-                <div key={variable} className="space-y-1">
-                  <Label htmlFor={variable} className="text-sm font-normal">
-                    {variable}
-                  </Label>
-                  <Input
-                    id={variable}
-                    value={variables[variable] || ""}
-                    onChange={(e) => setVariables(prev => ({ ...prev, [variable]: e.target.value }))}
-                    placeholder={`Enter value for {{${variable}}}`}
-                  />
+              <Label>Template Preview</Label>
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm">{selectedTemplateData.body}</p>
+              </div>
+              
+              {selectedTemplateData.variables && selectedTemplateData.variables.length > 0 && (
+                <div className="space-y-3">
+                  <Label>Template Variables</Label>
+                  {selectedTemplateData.variables.map((variable: any) => (
+                    <div key={variable.name} className="space-y-1">
+                      <Label htmlFor={variable.name} className="text-sm font-normal">
+                        {variable.name} {variable.required && <span className="text-red-500">*</span>}
+                      </Label>
+                      <Input
+                        id={variable.name}
+                        value={variables[variable.name] || ""}
+                        onChange={(e) => setVariables(prev => ({ ...prev, [variable.name]: e.target.value }))}
+                        placeholder={`Enter value for {{${variable.name}}}`}
+                        required={variable.required}
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           )}
 
           <div className="space-y-3">
-            <Label>Select Contact Groups</Label>
-            <div className="grid grid-cols-1 gap-2">
-              {mockGroups.map((group) => (
+            <div className="flex items-center justify-between">
+              <Label>Select Contacts</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAllContacts}
+              >
+                {selectedContacts.length === contacts.length ? 'Deselect All' : 'Select All'}
+              </Button>
+            </div>
+            
+            <div className="max-h-60 overflow-y-auto border rounded-lg">
+              {contacts.map((contact) => (
                 <div
-                  key={group.id}
-                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedGroups.includes(group.id)
+                  key={contact._id}
+                  className={`p-3 border-b last:border-b-0 cursor-pointer transition-colors ${
+                    selectedContacts.includes(contact._id)
                       ? "bg-green-50 border-green-200"
-                      : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                      : "bg-white hover:bg-gray-50"
                   }`}
-                  onClick={() => handleGroupToggle(group.id)}
+                  onClick={() => handleContactToggle(contact._id)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4" />
-                      <span className="font-medium">{group.name}</span>
+                      <div>
+                        <span className="font-medium">{contact.name}</span>
+                        <p className="text-sm text-gray-500">{contact.phone}</p>
+                      </div>
                     </div>
-                    <Badge variant="secondary">{group.count} contacts</Badge>
+                    {contact.tags && contact.tags.length > 0 && (
+                      <div className="flex gap-1">
+                        {contact.tags.slice(0, 2).map((tag: string) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {contact.tags.length > 2 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{contact.tags.length - 2}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
-            {selectedGroups.length > 0 && (
+            
+            {totalRecipients > 0 && (
               <div className="text-sm text-gray-600">
                 Total recipients: <span className="font-semibold">{totalRecipients.toLocaleString()}</span>
               </div>
@@ -177,6 +315,7 @@ export function NewBroadcastForm({ onClose, onSubmit }: NewBroadcastFormProps) {
                     type="date"
                     value={scheduleDate}
                     onChange={(e) => setScheduleDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
                     required
                   />
                 </div>
@@ -194,6 +333,22 @@ export function NewBroadcastForm({ onClose, onSubmit }: NewBroadcastFormProps) {
             )}
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="rateLimitPerMinute">Rate Limit (messages per minute)</Label>
+            <Input
+              id="rateLimitPerMinute"
+              type="number"
+              value={rateLimitPerMinute}
+              onChange={(e) => setRateLimitPerMinute(parseInt(e.target.value) || 60)}
+              min={1}
+              max={1000}
+              placeholder="60"
+            />
+            <p className="text-xs text-gray-500">
+              Recommended: 60 messages per minute to comply with WhatsApp limits
+            </p>
+          </div>
+
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancel
@@ -201,9 +356,25 @@ export function NewBroadcastForm({ onClose, onSubmit }: NewBroadcastFormProps) {
             <Button 
               type="submit" 
               className="flex-1 bg-green-600 hover:bg-green-700"
-              disabled={!campaignName || !selectedTemplate || selectedGroups.length === 0}
+              disabled={loading || !campaignName || !selectedTemplate || selectedContacts.length === 0}
             >
-              {scheduleType === "now" ? "Send Now" : "Schedule Broadcast"}
+              {loading ? (
+                "Creating..."
+              ) : (
+                <>
+                  {scheduleType === "now" ? (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Send Now
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Schedule Broadcast
+                    </>
+                  )}
+                </>
+              )}
             </Button>
           </div>
         </form>

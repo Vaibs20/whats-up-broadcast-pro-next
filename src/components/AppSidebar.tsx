@@ -16,7 +16,6 @@ import {
   FileText,
   Send,
   History,
-  Settings,
   BarChart3,
   MessageCircle,
 } from "lucide-react";
@@ -52,11 +51,6 @@ const menuItems = [
     title: "Chat Inbox",
     url: "/chat",
     icon: MessageCircle,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
   },
 ];
 

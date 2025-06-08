@@ -1,8 +1,10 @@
 
+import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { NewBroadcastForm } from "@/components/NewBroadcastForm";
 import { 
   Send, 
   Plus, 
@@ -11,9 +13,13 @@ import {
   CheckCircle,
   AlertCircle
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Broadcasts() {
-  const campaigns = [
+  const [showNewForm, setShowNewForm] = useState(false);
+  const { toast } = useToast();
+
+  const [campaigns, setCampaigns] = useState([
     { 
       id: 1, 
       name: "New Product Launch", 
@@ -47,7 +53,7 @@ export default function Broadcasts() {
       read: 623,
       scheduledAt: "2024-01-10 02:00 PM"
     },
-  ];
+  ]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -62,6 +68,45 @@ export default function Broadcasts() {
     }
   };
 
+  const handleNewBroadcast = (data: any) => {
+    console.log("Creating new broadcast:", data);
+    
+    const newCampaign = {
+      id: campaigns.length + 1,
+      name: data.campaignName,
+      status: data.scheduleType === "now" ? "sending" : "scheduled",
+      template: "Selected Template",
+      recipients: 0, // This would be calculated from selected groups
+      sent: 0,
+      delivered: 0,
+      read: 0,
+      scheduledAt: data.scheduleType === "now" 
+        ? new Date().toLocaleString()
+        : `${data.scheduleDate} ${data.scheduleTime}`
+    };
+
+    setCampaigns(prev => [newCampaign, ...prev]);
+    setShowNewForm(false);
+    
+    toast({
+      title: "Broadcast Created",
+      description: `Campaign "${data.campaignName}" has been ${data.scheduleType === "now" ? "started" : "scheduled"}.`,
+    });
+  };
+
+  if (showNewForm) {
+    return (
+      <Layout>
+        <div className="max-w-4xl mx-auto py-6">
+          <NewBroadcastForm 
+            onClose={() => setShowNewForm(false)}
+            onSubmit={handleNewBroadcast}
+          />
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -70,7 +115,10 @@ export default function Broadcasts() {
             <h1 className="text-2xl font-bold text-gray-900">Broadcast Campaigns</h1>
             <p className="text-gray-600">Create and manage your WhatsApp broadcast campaigns</p>
           </div>
-          <Button className="bg-green-600 hover:bg-green-700">
+          <Button 
+            className="bg-green-600 hover:bg-green-700"
+            onClick={() => setShowNewForm(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             New Broadcast
           </Button>

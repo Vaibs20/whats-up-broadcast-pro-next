@@ -3,6 +3,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, Plus, User } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function TopNav() {
   return (
@@ -17,9 +18,11 @@ export function TopNav() {
         </div>
         
         <div className="flex items-center gap-4">
-          <Button className="bg-green-600 hover:bg-green-700">
-            <Plus className="w-4 h-4 mr-2" />
-            New Broadcast
+          <Button className="bg-green-600 hover:bg-green-700" asChild>
+            <Link to="/broadcasts">
+              <Plus className="w-4 h-4 mr-2" />
+              New Broadcast
+            </Link>
           </Button>
           
           <div className="flex items-center gap-2">

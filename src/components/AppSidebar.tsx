@@ -20,46 +20,49 @@ import {
   BarChart3,
   MessageCircle,
 } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
   {
     title: "Dashboard",
-    url: "#",
+    url: "/",
     icon: BarChart3,
   },
   {
     title: "Contacts",
-    url: "#",
+    url: "/contacts",
     icon: Users,
   },
   {
     title: "Templates",
-    url: "#",
+    url: "/templates",
     icon: FileText,
   },
   {
     title: "Broadcasts",
-    url: "#",
+    url: "/broadcasts",
     icon: Send,
   },
   {
     title: "Message History",
-    url: "#",
+    url: "/history",
     icon: History,
   },
   {
     title: "Chat Inbox",
-    url: "#",
+    url: "/chat",
     icon: MessageCircle,
   },
   {
     title: "Settings",
-    url: "#",
+    url: "/settings",
     icon: Settings,
   },
 ];
 
 export function AppSidebar() {
+  const location = useLocation();
+
   return (
     <Sidebar className="border-r border-gray-200">
       <SidebarHeader className="p-6 border-b border-gray-200">
@@ -84,12 +87,13 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild 
-                    className="hover:bg-green-50 hover:text-green-700 data-[state=open]:bg-green-50 data-[state=open]:text-green-700"
+                    isActive={location.pathname === item.url}
+                    className="hover:bg-green-50 hover:text-green-700 data-[active=true]:bg-green-50 data-[active=true]:text-green-700"
                   >
-                    <a href={item.url} className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors">
+                    <Link to={item.url} className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors">
                       <item.icon className="w-5 h-5" />
                       <span className="font-medium">{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

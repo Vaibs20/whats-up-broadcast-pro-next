@@ -2,8 +2,9 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Plus, User } from "lucide-react";
+import { Bell, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { UserMenu } from "./UserMenu";
 
 export function TopNav() {
   return (
@@ -26,16 +27,16 @@ export function TopNav() {
           </Button>
           
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 text-xs bg-red-500">
-                3
-              </Badge>
+            <Button variant="ghost" size="icon" className="relative" asChild>
+              <Link to="/notifications">
+                <Bell className="w-5 h-5" />
+                <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 text-xs bg-red-500">
+                  3
+                </Badge>
+              </Link>
             </Button>
             
-            <Button variant="ghost" size="icon">
-              <User className="w-5 h-5" />
-            </Button>
+            <UserMenu />
           </div>
         </div>
       </div>

@@ -3,7 +3,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import AuthCallback from "./pages/AuthCallback";
+import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
 import Contacts from "./pages/Contacts";
 import Templates from "./pages/Templates";
@@ -22,19 +28,29 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/contacts" element={<Contacts />} />
-          <Route path="/templates" element={<Templates />} />
-          <Route path="/broadcasts" element={<Broadcasts />} />
-          <Route path="/history" element={<MessageHistory />} />
-          <Route path="/chat" element={<ChatInbox />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/notifications" element={<Notifications />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            
+            {/* Protected routes */}
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
+            <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
+            <Route path="/broadcasts" element={<ProtectedRoute><Broadcasts /></ProtectedRoute>} />
+            <Route path="/history" element={<ProtectedRoute><MessageHistory /></ProtectedRoute>} />
+            <Route path="/chat" element={<ProtectedRoute><ChatInbox /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            
+            {/* Catch-all route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

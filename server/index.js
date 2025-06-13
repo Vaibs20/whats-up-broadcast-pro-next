@@ -4,6 +4,9 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import session from 'express-session';
+import passport from './config/passport.js';
+import authRoutes from './routes/auth.js';
 import campaignRoutes from './routes/campaigns.js';
 import contactRoutes from './routes/contacts.js';
 import templateRoutes from './routes/templates.js';
@@ -25,6 +28,21 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
+// Session middleware for OAuth
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
+
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/whatsapp-broadcast', {
   useNewUrlParser: true,
@@ -40,6 +58,7 @@ mongoose.connection.on('error', (err) => {
 });
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/templates', templateRoutes);

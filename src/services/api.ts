@@ -27,10 +27,33 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem('authToken');
+      window.location.href = '/login';
+    }
     console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error);
   }
 );
+
+// Auth API
+export const authApi = {
+  login: (email: string, password: string) => 
+    api.post('/auth/login', { email, password }),
+  register: (userData: any) => 
+    api.post('/auth/register', userData),
+  getCurrentUser: (token?: string) => {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    return api.get('/auth/me', { headers });
+  },
+  logout: () => 
+    api.post('/auth/logout'),
+  forgotPassword: (email: string) => 
+    api.post('/auth/forgot-password', { email }),
+  resetPassword: (token: string, password: string) => 
+    api.post('/auth/reset-password', { token, password }),
+};
 
 // Campaign API
 export const campaignApi = {

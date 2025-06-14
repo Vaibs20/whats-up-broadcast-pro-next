@@ -1,3 +1,4 @@
+
 import passport from 'passport';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import User from '../models/User.js';
@@ -36,7 +37,11 @@ const isValidOAuthConfig = (clientId, clientSecret) => {
 };
 
 // Initialize OAuth strategies only if valid credentials exist
-const initializeOAuthStrategies = async () => {
+export const initializeOAuthStrategies = async () => {
+  console.log('Initializing OAuth strategies...');
+  console.log('Environment check - GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'SET' : 'UNDEFINED');
+  console.log('Environment check - GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'UNDEFINED');
+  
   // Google OAuth Strategy
   if (isValidOAuthConfig(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET)) {
     try {
@@ -145,9 +150,6 @@ const initializeOAuthStrategies = async () => {
     console.log('GitHub OAuth credentials not configured - strategy disabled');
   }
 };
-
-// Initialize OAuth strategies
-initializeOAuthStrategies();
 
 // Session serialization
 passport.serializeUser((user, done) => {

@@ -1,7 +1,9 @@
+
 import express from 'express';
 import passport from '../config/passport.js';
 import User from '../models/User.js';
 import { generateToken, authenticate } from '../middleware/auth.js';
+import { sendPasswordResetEmail } from '../services/emailService.js';
 import crypto from 'crypto';
 
 const router = express.Router();
@@ -199,8 +201,10 @@ router.post('/forgot-password', async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      // Don't reveal if user exists or not
-      return res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+      // Don't reveal if user exists or not for security
+      return res.json({ 
+        message: 'If an account with that email exists, a password reset link has been sent.' 
+      });
     }
 
     // Generate reset token
@@ -209,10 +213,25 @@ router.post('/forgot-password', async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    // TODO: Send email with reset link
-    console.log(`Password reset token for ${email}: ${resetToken}`);
+    try {
+      // Send password reset email
+      await sendPasswordResetEmail(email, resetToken);
+      console.log(`Password reset email sent to ${email}`);
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+      // Clear the reset token if email sending fails
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save();
+      
+      return res.status(500).json({ 
+        error: 'Failed to send password reset email. Please try again later.' 
+      });
+    }
 
-    res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+    res.json({ 
+      message: 'If an account with that email exists, a password reset link has been sent.' 
+    });
   } catch (error) {
     console.error('Forgot password error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -229,7 +248,9 @@ router.post('/reset-password', async (req, res) => {
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+      return res.status(400).json({ 
+        error: 'Password must be at least 6 characters long' 
+      });
     }
 
     const user = await User.findOne({
@@ -238,7 +259,9 @@ router.post('/reset-password', async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ error: 'Invalid or expired reset token' });
+      return res.status(400).json({ 
+        error: 'Invalid or expired reset token' 
+      });
     }
 
     // Update password

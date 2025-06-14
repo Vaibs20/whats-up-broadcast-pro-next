@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -7,7 +8,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import session from 'express-session';
-import passport from './config/passport.js';
+import passport, { initializeOAuthStrategies } from './config/passport.js';
 import authRoutes from './routes/auth.js';
 import campaignRoutes from './routes/campaigns.js';
 import contactRoutes from './routes/contacts.js';
@@ -24,6 +25,9 @@ console.log('Environment variables loaded:');
 console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'SET' : 'UNDEFINED');
 console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'UNDEFINED');
 console.log('NODE_ENV:', process.env.NODE_ENV);
+
+// Initialize OAuth strategies after environment variables are loaded
+await initializeOAuthStrategies();
 
 const app = express();
 const server = createServer(app);

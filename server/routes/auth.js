@@ -161,30 +161,58 @@ router.post('/logout', authenticate, (req, res) => {
 });
 
 // Google OAuth routes
-router.get('/google', 
-  passport.authenticate('google', { scope: ['profile', 'email'] })
-);
+router.get('/google', (req, res, next) => {
+  console.log('🔄 Initiating Google OAuth flow...');
+  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
 
 router.get('/google/callback',
-  passport.authenticate('google', { session: false }),
+  (req, res, next) => {
+    console.log('🔄 Google OAuth callback received...');
+    passport.authenticate('google', { 
+      session: false,
+      failureRedirect: `${process.env.CLIENT_URL}/auth/callback?error=oauth_failed`
+    })(req, res, next);
+  },
   (req, res) => {
-    const token = generateToken(req.user._id);
-    // Redirect to frontend with token
-    res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
+    try {
+      console.log('✅ Google OAuth successful for user:', req.user.email);
+      const token = generateToken(req.user._id);
+      console.log('🔑 Generated JWT token for user');
+      // Redirect to frontend with token
+      res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
+    } catch (error) {
+      console.error('❌ Error in Google OAuth callback:', error);
+      res.redirect(`${process.env.CLIENT_URL}/auth/callback?error=token_generation_failed`);
+    }
   }
 );
 
 // GitHub OAuth routes
-router.get('/github',
-  passport.authenticate('github', { scope: ['user:email'] })
-);
+router.get('/github', (req, res, next) => {
+  console.log('🔄 Initiating GitHub OAuth flow...');
+  passport.authenticate('github', { scope: ['user:email'] })(req, res, next);
+});
 
 router.get('/github/callback',
-  passport.authenticate('github', { session: false }),
+  (req, res, next) => {
+    console.log('🔄 GitHub OAuth callback received...');
+    passport.authenticate('github', { 
+      session: false,
+      failureRedirect: `${process.env.CLIENT_URL}/auth/callback?error=oauth_failed`
+    })(req, res, next);
+  },
   (req, res) => {
-    const token = generateToken(req.user._id);
-    // Redirect to frontend with token
-    res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
+    try {
+      console.log('✅ GitHub OAuth successful for user:', req.user.email);
+      const token = generateToken(req.user._id);
+      console.log('🔑 Generated JWT token for user');
+      // Redirect to frontend with token
+      res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
+    } catch (error) {
+      console.error('❌ Error in GitHub OAuth callback:', error);
+      res.redirect(`${process.env.CLIENT_URL}/auth/callback?error=token_generation_failed`);
+    }
   }
 );
 

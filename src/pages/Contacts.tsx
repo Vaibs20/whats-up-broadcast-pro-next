@@ -80,7 +80,7 @@ export default function Contacts() {
   };
 
   // Get unique tags from all contacts for filter
-  const allTags = Array.from(new Set(contacts.flatMap(c => c.tags)));
+  const allTags: string[] = Array.from(new Set(contacts.flatMap(c => c.tags)));
 
   return (
     <Layout>
@@ -125,7 +125,7 @@ export default function Contacts() {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Status</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                     <SelectItem value="blocked">Blocked</SelectItem>
@@ -136,8 +136,8 @@ export default function Contacts() {
                     <SelectValue placeholder="Tags" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Tags</SelectItem>
-                    {allTags.map(tag => (
+                    <SelectItem value="all">All Tags</SelectItem>
+                    {allTags.map((tag: string) => (
                       <SelectItem key={tag} value={tag}>{tag}</SelectItem>
                     ))}
                   </SelectContent>

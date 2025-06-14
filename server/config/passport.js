@@ -2,6 +2,12 @@ import passport from 'passport';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import User from '../models/User.js';
 
+// Add these lines for debugging
+console.log('Environment variables debug:');
+console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'SET' : 'UNDEFINED');
+console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'UNDEFINED');
+console.log('First 10 chars of GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID?.substring(0, 10));
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 
 // JWT Strategy - Always active
@@ -22,6 +28,7 @@ passport.use(new JwtStrategy({
 
 // Helper function to check if OAuth credentials are valid
 const isValidOAuthConfig = (clientId, clientSecret) => {
+  // console.log(clientId, clientSecret);
   return clientId &&
     clientSecret &&
     !clientId.includes('your-') &&

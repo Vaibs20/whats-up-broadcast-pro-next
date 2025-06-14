@@ -4,6 +4,8 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import session from 'express-session';
 import passport from './config/passport.js';
 import authRoutes from './routes/auth.js';
@@ -13,7 +15,15 @@ import templateRoutes from './routes/templates.js';
 import { initializeScheduler } from './services/scheduler.js';
 import { setupSocketHandlers } from './services/socketService.js';
 
-dotenv.config();
+// Fix for ES modules path resolution
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '../.env') });
+
+// Debug environment variables loading
+console.log('Environment variables loaded:');
+console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'SET' : 'UNDEFINED');
+console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'UNDEFINED');
+console.log('NODE_ENV:', process.env.NODE_ENV);
 
 const app = express();
 const server = createServer(app);

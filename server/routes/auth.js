@@ -1,4 +1,3 @@
-
 import express from 'express';
 import passport from '../config/passport.js';
 import User from '../models/User.js';
@@ -190,51 +189,97 @@ router.get('/github/callback',
   }
 );
 
-// Forgot password
+// Forgot password with professional implementation
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
 
+    // Input validation
     if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
+      return res.status(400).json({ error: 'Email address is required' });
     }
 
-    const user = await User.findOne({ email });
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Please provide a valid email address' });
+    }
+
+    // Normalize email (lowercase, trim)
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: normalizedEmail });
+    
+    // Always return success message for security (don't reveal if user exists)
+    const successMessage = 'If an account with that email exists, a password reset link has been sent.';
+    
     if (!user) {
-      // Don't reveal if user exists or not for security
-      return res.json({ 
-        message: 'If an account with that email exists, a password reset link has been sent.' 
+      // Log the attempt for security monitoring
+      console.log(`🔍 Password reset requested for non-existent email: ${normalizedEmail}`);
+      return res.json({ message: successMessage });
+    }
+
+    // Check if user account is active
+    if (!user.isActive) {
+      console.log(`⚠️ Password reset requested for inactive account: ${normalizedEmail}`);
+      return res.json({ message: successMessage });
+    }
+
+    // Rate limiting: Check if a reset was recently requested
+    const recentResetTime = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
+    if (user.resetPasswordExpires && user.resetPasswordExpires > recentResetTime) {
+      console.log(`⏰ Rate limited password reset for: ${normalizedEmail}`);
+      return res.status(429).json({ 
+        error: 'Please wait 5 minutes before requesting another password reset' 
       });
     }
 
-    // Generate reset token
+    // Generate secure reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = Date.now() + 3600000; // 1 hour from now
+
+    // Save reset token to user
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    user.resetPasswordExpires = resetTokenExpiry;
     await user.save();
 
     try {
-      // Send password reset email
-      await sendPasswordResetEmail(email, resetToken);
-      console.log(`Password reset email sent to ${email}`);
+      // Send professional password reset email
+      const emailResult = await sendPasswordResetEmail(normalizedEmail, resetToken);
+      
+      console.log(`✅ Password reset email sent successfully to ${normalizedEmail}`);
+      console.log('Email service response:', emailResult);
+      
+      res.json({ message: successMessage });
     } catch (emailError) {
-      console.error('Failed to send password reset email:', emailError);
+      console.error('❌ Failed to send password reset email:', emailError);
+      
       // Clear the reset token if email sending fails
       user.resetPasswordToken = undefined;
       user.resetPasswordExpires = undefined;
       await user.save();
+      
+      // Return appropriate error message
+      if (emailError.message.includes('Authentication failed')) {
+        return res.status(500).json({ 
+          error: 'Email service configuration error. Please contact support.' 
+        });
+      } else if (emailError.message.includes('Connection failed')) {
+        return res.status(500).json({ 
+          error: 'Unable to send email at this time. Please try again later.' 
+        });
+      }
       
       return res.status(500).json({ 
         error: 'Failed to send password reset email. Please try again later.' 
       });
     }
 
-    res.json({ 
-      message: 'If an account with that email exists, a password reset link has been sent.' 
-    });
   } catch (error) {
-    console.error('Forgot password error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('💥 Forgot password route error:', error);
+    res.status(500).json({ 
+      error: 'An unexpected error occurred. Please try again later.' 
+    });
   }
 });
 

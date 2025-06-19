@@ -1,4 +1,3 @@
-
 import nodemailer from 'nodemailer';
 
 // Create reusable transporter object using SMTP transport
@@ -28,7 +27,7 @@ const createTransporter = () => {
     };
   }
 
-  return nodemailer.createTransporter(emailConfig);
+  return nodemailer.createTransport(emailConfig);
 };
 
 // Professional email templates

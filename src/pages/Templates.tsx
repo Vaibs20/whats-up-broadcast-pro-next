@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -123,20 +124,10 @@ export default function Templates() {
             <CardTitle className="text-2xl font-bold">
               WhatsApp Templates
             </CardTitle>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Template
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Create New Template</DialogTitle>
-                </DialogHeader>
-                <TemplateForm onSubmit={handleCreateTemplate} isLoading={isCreating} />
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => setIsCreateDialogOpen(true)} variant="outline">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Template
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
@@ -176,10 +167,6 @@ export default function Templates() {
             </div>
             {isLoading ? (
               <div className="mt-6 text-center">Loading templates...</div>
-            ) : error ? (
-              <div className="mt-6 text-center text-red-500">
-                Error: {error.message}
-              </div>
             ) : filteredTemplates.length === 0 ? (
               <div className="mt-6 text-center">No templates found.</div>
             ) : (
@@ -215,21 +202,22 @@ export default function Templates() {
         </Card>
       </div>
 
+      {/* Create Template Dialog */}
+      <TemplateForm 
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSubmit={handleCreateTemplate}
+        isLoading={isCreating}
+      />
+
       {/* Edit Template Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Edit Template</DialogTitle>
-          </DialogHeader>
-          {selectedTemplate && (
-            <TemplateForm
-              template={selectedTemplate}
-              onSubmit={handleUpdateTemplate}
-              isLoading={isUpdating}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <TemplateForm 
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        template={selectedTemplate}
+        onSubmit={handleUpdateTemplate}
+        isLoading={isUpdating}
+      />
 
       {/* Preview Template Dialog */}
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>

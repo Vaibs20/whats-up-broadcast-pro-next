@@ -24,6 +24,7 @@ export function NewBroadcastForm({ onClose, onSubmit }: NewBroadcastFormProps) {
   const [scheduleTime, setScheduleTime] = useState("");
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [rateLimitPerMinute, setRateLimitPerMinute] = useState(60);
+  const [provider, setProvider] = useState("auto");
   
   const [templates, setTemplates] = useState<any[]>([]);
   const [contacts, setContacts] = useState<any[]>([]);
@@ -146,7 +147,8 @@ export function NewBroadcastForm({ onClose, onSubmit }: NewBroadcastFormProps) {
         contactIds: selectedContacts,
         variables,
         scheduledAt: scheduledAt.toISOString(),
-        rateLimitPerMinute
+        rateLimitPerMinute,
+        provider
       };
 
       await onSubmit(data);
@@ -346,6 +348,23 @@ export function NewBroadcastForm({ onClose, onSubmit }: NewBroadcastFormProps) {
             />
             <p className="text-xs text-gray-500">
               Recommended: 60 messages per minute to comply with WhatsApp limits
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Messaging Provider</Label>
+            <Select value={provider} onValueChange={setProvider}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose messaging provider" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto (Recommended)</SelectItem>
+                <SelectItem value="whatsapp">WhatsApp Business API</SelectItem>
+                <SelectItem value="twilio">Twilio WhatsApp (Testing)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500">
+              Auto will use WhatsApp API if configured, otherwise Twilio for testing
             </p>
           </div>
 

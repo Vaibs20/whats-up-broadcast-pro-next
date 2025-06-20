@@ -1,3 +1,4 @@
+
 import mongoose from 'mongoose';
 
 const campaignSchema = new mongoose.Schema({
@@ -56,6 +57,29 @@ const campaignSchema = new mongoose.Schema({
   rateLimitPerMinute: {
     type: Number,
     default: 60
+  },
+  provider: {
+    type: String,
+    enum: ['whatsapp', 'twilio', 'auto'],
+    default: 'auto'
+  },
+  // n8n integration fields
+  n8nWorkflowId: {
+    type: String,
+    sparse: true
+  },
+  googleCalendarEventId: {
+    type: String,
+    sparse: true
+  },
+  automatedTrigger: {
+    type: Boolean,
+    default: false
+  },
+  triggerSource: {
+    type: String,
+    enum: ['manual', 'n8n', 'calendar', 'api'],
+    default: 'manual'
   }
 }, {
   timestamps: true
@@ -63,5 +87,7 @@ const campaignSchema = new mongoose.Schema({
 
 campaignSchema.index({ scheduledAt: 1, status: 1 });
 campaignSchema.index({ jobId: 1 });
+campaignSchema.index({ n8nWorkflowId: 1 });
+campaignSchema.index({ googleCalendarEventId: 1 });
 
 export default mongoose.model('Campaign', campaignSchema);

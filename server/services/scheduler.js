@@ -2,6 +2,7 @@ import Bull from 'bull';
 import Redis from 'redis';
 import Campaign from '../models/Campaign.js';
 import { sendCampaignMessages } from './whatsappService.js';
+import { sendCampaignMessagesTwilio } from './twilioService.js';
 
 let campaignQueue;
 let redisClient;
@@ -54,10 +55,16 @@ export const initializeScheduler = async (io) => {
           progress: campaign.progress
         });
 
-        // Send messages
-        await sendCampaignMessages(campaign, io);
+        // Determine which service to use
+        const provider = determineProvider(campaign);
+        
+        if (provider === 'twilio') {
+          await sendCampaignMessagesTwilio(campaign, io);
+        } else {
+          await sendCampaignMessages(campaign, io);
+        }
 
-        console.log(`Campaign ${campaignId} completed successfully`);
+        console.log(`Campaign ${campaignId} completed successfully using ${provider}`);
       } catch (error) {
         console.error(`Error processing campaign ${campaignId}:`, error);
         
@@ -84,6 +91,25 @@ export const initializeScheduler = async (io) => {
     console.log('Campaign scheduler initialized');
   } catch (error) {
     console.error('Failed to initialize scheduler:', error);
+  }
+};
+
+const determineProvider = (campaign) => {
+  // If explicitly set, use that provider
+  if (campaign.provider && campaign.provider !== 'auto') {
+    return campaign.provider;
+  }
+  
+  // Auto-determine based on environment
+  const hasWhatsAppCredentials = process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const hasTwilioCredentials = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN;
+  
+  if (hasWhatsAppCredentials) {
+    return 'whatsapp';
+  } else if (hasTwilioCredentials) {
+    return 'twilio';
+  } else {
+    throw new Error('No messaging provider credentials configured');
   }
 };
 

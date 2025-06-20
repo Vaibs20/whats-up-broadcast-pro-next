@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -13,6 +12,7 @@ import authRoutes from './routes/auth.js';
 import campaignRoutes from './routes/campaigns.js';
 import contactRoutes from './routes/contacts.js';
 import templateRoutes from './routes/templates.js';
+import n8nRoutes from './routes/n8n.js';
 import { initializeScheduler } from './services/scheduler.js';
 import { setupSocketHandlers } from './services/socketService.js';
 
@@ -76,6 +76,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/n8n', n8nRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
